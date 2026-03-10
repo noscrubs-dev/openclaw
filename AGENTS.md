@@ -88,6 +88,8 @@
 
 ## Build, Test, and Development Commands
 
+- Fork-specific runtime note: for the `noscrubs-dev/openclaw` fork, use Bun as the default local package manager/runtime unless a task specifically requires Node/pnpm behavior.
+- Fork-specific channel note: this fork does not use the Telegram or WhatsApp stacks in production. Do not block local workflow/tooling choices on those packages unless a task explicitly targets them.
 - Runtime baseline: Node **22+** (keep Node + Bun paths working).
 - Install deps: `pnpm install`
 - If deps are missing (for example `node_modules` missing, `vitest not found`, or `command not found`), run the repo’s package-manager install command (prefer lockfile/README-defined PM), then rerun the exact requested command once. Apply this to test/build/lint/typecheck/dev commands; if retry still fails, report the command and first actionable error.
@@ -199,6 +201,8 @@
 
 ## Agent-Specific Notes
 
+- This fork defaults to Bun-first development. If a command exists in both ecosystems, prefer Bun unless the task is explicitly about Node/pnpm packaging behavior.
+- This fork does not rely on Telegram or WhatsApp integrations. Preserve shared code when touching generic channel logic, but do not treat those packages as part of the default validation path for fork-specific changes.
 - Vocabulary: "makeup" = "mac app".
 - Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
 - When adding a new `AGENTS.md` anywhere in the repo, also add a `CLAUDE.md` symlink pointing to it (example: `ln -s AGENTS.md CLAUDE.md`).
