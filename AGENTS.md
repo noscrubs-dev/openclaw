@@ -88,7 +88,7 @@
 
 ## Build, Test, and Development Commands
 
-- Fork-specific runtime note: for the `noscrubs-dev/openclaw` fork, use Bun as the default local package manager/runtime unless a task specifically requires Node/pnpm behavior.
+- Fork-specific runtime note: for the `noscrubs-dev/openclaw` fork, use Bun as the default local package manager/runtime, including for running the gateway, unless a task specifically requires Node/pnpm behavior.
 - Fork-specific channel note: this fork does not use the Telegram or WhatsApp stacks in production. Do not block local workflow/tooling choices on those packages unless a task explicitly targets them.
 - Runtime baseline: Node **22+** (keep Node + Bun paths working).
 - Install deps: `pnpm install`
@@ -201,7 +201,7 @@
 
 ## Agent-Specific Notes
 
-- This fork defaults to Bun-first development. If a command exists in both ecosystems, prefer Bun unless the task is explicitly about Node/pnpm packaging behavior.
+- This fork defaults to Bun-first development and Bun-run gateway sessions. If a command exists in both ecosystems, prefer Bun unless the task is explicitly about Node/pnpm packaging behavior.
 - This fork does not rely on Telegram or WhatsApp integrations. Preserve shared code when touching generic channel logic, but do not treat those packages as part of the default validation path for fork-specific changes.
 - Vocabulary: "makeup" = "mac app".
 - Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
