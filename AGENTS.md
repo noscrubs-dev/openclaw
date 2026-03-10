@@ -54,6 +54,15 @@
   - Extensions (channel plugins): `extensions/*` (e.g. `extensions/msteams`, `extensions/matrix`, `extensions/zalo`, `extensions/zalouser`, `extensions/voice-call`)
 - When adding channels/extensions/apps/docs, update `.github/labeler.yml` and create matching GitHub labels (use existing channel/extension label colors).
 
+## Fork Notes
+
+- This repo is a fork. Keep diffs as small as possible to reduce merge conflicts when rebasing from `origin/main`.
+- This fork defaults to pnpm-first development. Do not assume Bun is the runtime unless a task explicitly requires it.
+- This fork does not rely on Telegram or WhatsApp integrations in production. Preserve shared code when touching generic channel logic, but do not treat those packages as part of the default validation path for fork-specific changes.
+- Unless the user explicitly asks for release/versioning work, do not edit `CHANGELOG.md`, app/plugin/package version numbers, or other release metadata in this fork.
+- This fork is published privately on GitHub Packages as `@noscrubs-dev/openclaw`. Treat that package identity as fork-specific release metadata and do not rewrite it toward upstream `openclaw` unless the user explicitly asks.
+- For this fork, releases are local-build and local-publish only. Do not rely on GitHub Actions for package publishing; build and publish to GitHub Packages manually from a local machine when explicitly requested.
+
 ## Docs Linking (Mintlify)
 
 - Docs are hosted on Mintlify (docs.openclaw.ai).
@@ -88,7 +97,6 @@
 
 ## Build, Test, and Development Commands
 
-- Fork-specific channel note: this fork does not use the Telegram or WhatsApp stacks in production. Do not block local workflow/tooling choices on those packages unless a task explicitly targets them.
 - Runtime baseline: Node **22+**.
 - Install deps: `pnpm install`
 - If deps are missing (for example `node_modules` missing, `vitest not found`, or `command not found`), run the repo’s package-manager install command (prefer lockfile/README-defined PM), then rerun the exact requested command once. Apply this to test/build/lint/typecheck/dev commands; if retry still fails, report the command and first actionable error.
@@ -199,10 +207,6 @@
 
 ## Agent-Specific Notes
 
-- This fork defaults to pnpm-first development. Do not assume Bun is the runtime unless a task explicitly requires it.
-- This fork does not rely on Telegram or WhatsApp integrations. Preserve shared code when touching generic channel logic, but do not treat those packages as part of the default validation path for fork-specific changes.
-- Fork/minimal-diff policy: unless the user explicitly asks for release/versioning work, do not edit `CHANGELOG.md`, app/plugin/package version numbers, or other release metadata in this fork. Keep diffs as small as possible to reduce merge conflicts when rebasing from `origin/main`.
-- Fork/package publishing: this fork is published privately on GitHub Packages as `@noscrubs-dev/openclaw`. Treat that package identity as fork-specific release metadata and do not rewrite it toward upstream `openclaw` unless the user explicitly asks.
 - Vocabulary: "makeup" = "mac app".
 - Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
 - When adding a new `AGENTS.md` anywhere in the repo, also add a `CLAUDE.md` symlink pointing to it (example: `ln -s AGENTS.md CLAUDE.md`).
