@@ -5,6 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const CORE_PACKAGE_NAMES = new Set(["openclaw"]);
 
+function isCorePackageName(name: string | null): boolean {
+  if (!name) {
+    return false;
+  }
+  return CORE_PACKAGE_NAMES.has(name) || name.endsWith("/openclaw");
+}
+
 async function readPackageName(dir: string): Promise<string | null> {
   try {
     const raw = await fs.readFile(path.join(dir, "package.json"), "utf-8");
@@ -28,7 +35,7 @@ function readPackageNameSync(dir: string): string | null {
 async function findPackageRoot(startDir: string, maxDepth = 12): Promise<string | null> {
   for (const current of iterAncestorDirs(startDir, maxDepth)) {
     const name = await readPackageName(current);
-    if (name && CORE_PACKAGE_NAMES.has(name)) {
+    if (isCorePackageName(name)) {
       return current;
     }
   }
@@ -38,7 +45,7 @@ async function findPackageRoot(startDir: string, maxDepth = 12): Promise<string 
 function findPackageRootSync(startDir: string, maxDepth = 12): string | null {
   for (const current of iterAncestorDirs(startDir, maxDepth)) {
     const name = readPackageNameSync(current);
-    if (name && CORE_PACKAGE_NAMES.has(name)) {
+    if (isCorePackageName(name)) {
       return current;
     }
   }

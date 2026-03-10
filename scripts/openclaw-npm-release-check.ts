@@ -26,7 +26,8 @@ export type ParsedReleaseVersion = {
 const STABLE_VERSION_REGEX = /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<day>[1-9]\d?)$/;
 const BETA_VERSION_REGEX =
   /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<day>[1-9]\d?)-beta\.(?<beta>[1-9]\d*)$/;
-const EXPECTED_REPOSITORY_URL = "https://github.com/openclaw/openclaw";
+const EXPECTED_PACKAGE_NAME = "@noscrubs-dev/openclaw";
+const EXPECTED_REPOSITORY_URL = "https://github.com/noscrubs-dev/openclaw";
 const MAX_CALVER_DISTANCE_DAYS = 2;
 
 function normalizeRepoUrl(value: unknown): string {
@@ -119,8 +120,8 @@ export function collectReleasePackageMetadataErrors(pkg: PackageJson): string[] 
   );
   const errors: string[] = [];
 
-  if (pkg.name !== "openclaw") {
-    errors.push(`package.json name must be "openclaw"; found "${pkg.name ?? ""}".`);
+  if (pkg.name !== EXPECTED_PACKAGE_NAME) {
+    errors.push(`package.json name must be "${EXPECTED_PACKAGE_NAME}"; found "${pkg.name ?? ""}".`);
   }
   if (!pkg.description?.trim()) {
     errors.push("package.json description must be non-empty.");

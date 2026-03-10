@@ -1,6 +1,6 @@
 {
-  "name": "openclaw",
-  "version": "2026.3.9",
+  "name": "@noscrubs-dev/openclaw",
+  "version": "2026.3.11",
   "description": "Multi-channel AI gateway with extensible messaging integrations",
   "keywords": [],
   "homepage": "https://github.com/openclaw/openclaw#readme",
@@ -11,7 +11,7 @@
   "author": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openclaw/openclaw.git"
+    "url": "git+https://github.com/noscrubs-dev/openclaw.git"
   },
   "bin": {
     "openclaw": "openclaw.mjs"
@@ -213,6 +213,9 @@
       "default": "./dist/plugin-sdk/keyed-async-queue.js"
     },
     "./cli-entry": "./openclaw.mjs"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "android:assemble": "cd apps/android && ./gradlew :app:assembleDebug",

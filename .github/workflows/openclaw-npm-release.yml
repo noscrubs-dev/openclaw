@@ -1,4 +1,4 @@
-name: OpenClaw NPM Release
+name: OpenClaw GitHub Packages Release
 
 on:
   push:
@@ -14,12 +14,11 @@ env:
   PNPM_VERSION: "10.23.0"
 
 jobs:
-  publish_openclaw_npm:
-    # npm trusted publishing + provenance requires a GitHub-hosted runner.
+  publish_openclaw_package:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,6 +32,13 @@ jobs:
           pnpm-version: ${{ env.PNPM_VERSION }}
           install-bun: "false"
           use-sticky-disk: "false"
+
+      - name: Configure GitHub Packages registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://npm.pkg.github.com
+          scope: "@noscrubs-dev"
 
       - name: Validate release tag and package metadata
         env:
@@ -49,14 +55,15 @@ jobs:
       - name: Ensure version is not already published
         run: |
           set -euo pipefail
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
 
-          if npm view "openclaw@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
-            echo "openclaw@${PACKAGE_VERSION} is already published on npm."
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published on GitHub Packages."
             exit 1
           fi
 
-          echo "Publishing openclaw@${PACKAGE_VERSION}"
+          echo "Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION} to GitHub Packages"
 
       - name: Check
         run: pnpm check
@@ -68,12 +75,15 @@ jobs:
         run: pnpm release:check
 
       - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PUBLISH_TAG_ARGS=()
 
           if [[ "$PACKAGE_VERSION" == *-beta.* ]]; then
-            npm publish --access public --tag beta --provenance
-          else
-            npm publish --access public --provenance
+            PUBLISH_TAG_ARGS+=(--tag beta)
           fi
+
+          npm publish "${PUBLISH_TAG_ARGS[@]}"

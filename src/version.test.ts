@@ -53,6 +53,18 @@ describe("version resolution", () => {
     });
   });
 
+  it("accepts scoped openclaw forks when reading package version", async () => {
+    await withTempDir(async (root) => {
+      await writeJsonFixture(root, "package.json", {
+        name: "@noscrubs-dev/openclaw",
+        version: "1.2.4",
+      });
+      const moduleUrl = await ensureModuleFixture(root);
+      expect(readVersionFromPackageJsonForModuleUrl(moduleUrl)).toBe("1.2.4");
+      expect(resolveVersionFromModuleUrl(moduleUrl)).toBe("1.2.4");
+    });
+  });
+
   it("ignores unrelated nearby package.json files", async () => {
     await withTempDir(async (root) => {
       await writeJsonFixture(root, "package.json", { name: "openclaw", version: "2.3.4" });
