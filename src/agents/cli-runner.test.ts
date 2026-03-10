@@ -107,6 +107,48 @@ describe("runCliAgent with process supervisor", () => {
     expect(input.scopeKey).toContain("thread-123");
   });
 
+  it("injects OpenClaw runtime context env vars into backend processes", async () => {
+    supervisorSpawnMock.mockResolvedValueOnce(
+      createManagedRun({
+        reason: "exit",
+        exitCode: 0,
+        exitSignal: null,
+        durationMs: 50,
+        stdout: "ok",
+        stderr: "",
+        timedOut: false,
+        noOutputTimedOut: false,
+      }),
+    );
+
+    await runCliAgent({
+      sessionId: "session-123",
+      sessionKey: "agent:coder:task-42",
+      agentId: "coder",
+      sessionFile: "/tmp/session.jsonl",
+      workspaceDir: "/tmp/backend-workspace",
+      prompt: "hi",
+      provider: "codex-cli",
+      model: "gpt-5.2-codex",
+      timeoutMs: 1_000,
+      runId: "run-ctx",
+      cliSessionId: "thread-ctx",
+    });
+
+    const input = supervisorSpawnMock.mock.calls[0]?.[0] as {
+      env?: Record<string, string>;
+    };
+    expect(input.env).toMatchObject({
+      OPENCLAW_SESSION_ID: "session-123",
+      OPENCLAW_SESSION_KEY: "agent:coder:task-42",
+      OPENCLAW_AGENT_ID: "coder",
+      OPENCLAW_WORKSPACE_DIR: path.resolve("/tmp/backend-workspace"),
+      OPENCLAW_PROVIDER: "codex-cli",
+      OPENCLAW_MODEL: "gpt-5.2-codex",
+      OPENCLAW_RUN_ID: "run-ctx",
+    });
+  });
+
   it("fails with timeout when no-output watchdog trips", async () => {
     supervisorSpawnMock.mockResolvedValueOnce(
       createManagedRun({

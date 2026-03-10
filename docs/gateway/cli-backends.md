@@ -140,6 +140,29 @@ The provider id becomes the left side of your model ref:
 4. **Parses output** (JSON or plain text) and returns the final text.
 5. **Persists session ids** per backend, so follow-ups reuse the same CLI session.
 
+## Runtime environment
+
+Each CLI backend process also receives OpenClaw runtime context as environment
+variables:
+
+- `OPENCLAW_SESSION_ID`
+- `OPENCLAW_SESSION_KEY` (when the run is attached to a stored session key)
+- `OPENCLAW_AGENT_ID`
+- `OPENCLAW_WORKSPACE_DIR`
+- `OPENCLAW_PROVIDER`
+- `OPENCLAW_MODEL`
+- `OPENCLAW_RUN_ID`
+
+This is useful when the configured backend command is a wrapper script rather
+than the model CLI directly. A wrapper can inspect the current session or agent
+and decide how to route the actual command.
+
+Example use cases:
+
+- Route `codex` to a different remote executor per OpenClaw session.
+- Map one `coder` agent session to one remote workspace or sandbox.
+- Attach backend logs or temp files to the current OpenClaw run id.
+
 ## Sessions
 
 - If the CLI supports sessions, set `sessionArg` (e.g. `--session-id`) or

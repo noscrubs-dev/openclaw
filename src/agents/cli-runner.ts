@@ -48,6 +48,29 @@ import { redactRunIdentifier, resolveRunWorkspaceDir } from "./workspace-run.js"
 
 const log = createSubsystemLogger("agent/claude-cli");
 
+function buildCliRuntimeEnv(params: {
+  sessionId: string;
+  sessionKey?: string;
+  workspaceDir: string;
+  agentId: string;
+  provider: string;
+  model: string;
+  runId: string;
+}): Record<string, string> {
+  const env: Record<string, string> = {
+    OPENCLAW_SESSION_ID: params.sessionId,
+    OPENCLAW_WORKSPACE_DIR: params.workspaceDir,
+    OPENCLAW_AGENT_ID: params.agentId,
+    OPENCLAW_PROVIDER: params.provider,
+    OPENCLAW_MODEL: params.model,
+    OPENCLAW_RUN_ID: params.runId,
+  };
+  if (params.sessionKey?.trim()) {
+    env.OPENCLAW_SESSION_KEY = params.sessionKey.trim();
+  }
+  return env;
+}
+
 export async function runCliAgent(params: {
   sessionId: string;
   sessionKey?: string;
@@ -180,6 +203,15 @@ export async function runCliAgent(params: {
     skillsPrompt: "",
     tools: [],
   });
+  const runtimeEnv = buildCliRuntimeEnv({
+    sessionId: params.sessionId,
+    sessionKey: params.sessionKey,
+    workspaceDir,
+    agentId: sessionAgentId,
+    provider: params.provider,
+    model: modelId,
+    runId: params.runId,
+  });
 
   // Helper function to execute CLI with given session ID
   const executeCliWithSession = async (
@@ -290,7 +322,7 @@ export async function runCliAgent(params: {
           for (const key of backend.clearEnv ?? []) {
             delete next[key];
           }
-          return next;
+          return { ...next, ...runtimeEnv };
         })();
         const noOutputTimeoutMs = resolveCliNoOutputTimeoutMs({
           backend,
