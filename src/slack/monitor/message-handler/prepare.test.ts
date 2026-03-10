@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { App } from "@slack/bolt";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { expectInboundContextContract } from "../../../../test/helpers/inbound-contract.js";
 import type { OpenClawConfig } from "../../../config/config.js";
 import { resolveAgentRoute } from "../../../routing/resolve-route.js";
@@ -13,6 +13,12 @@ import type { SlackMessageEvent } from "../../types.js";
 import type { SlackMonitorContext } from "../context.js";
 import { prepareSlackMessage } from "./prepare.js";
 import { createInboundSlackTestContext, createSlackTestAccount } from "./prepare.test-helpers.js";
+
+const sendMessageSlackMock = vi.fn();
+
+vi.mock("../../send.js", () => ({
+  sendMessageSlack: (...args: unknown[]) => sendMessageSlackMock(...args),
+}));
 
 describe("slack prepareSlackMessage inbound contract", () => {
   let fixtureRoot = "";
@@ -29,6 +35,10 @@ describe("slack prepareSlackMessage inbound contract", () => {
 
   beforeAll(() => {
     fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-slack-thread-"));
+  });
+
+  beforeEach(() => {
+    sendMessageSlackMock.mockReset();
   });
 
   afterAll(() => {
@@ -220,6 +230,40 @@ describe("slack prepareSlackMessage inbound contract", () => {
     expect(prepared).toBeTruthy();
     // oxlint-disable-next-line typescript/no-explicit-any
     expectInboundContextContract(prepared!.ctxPayload as any);
+  });
+
+  it("replies to blocked app mentions in disallowed channels", async () => {
+    const ctx = createInboundSlackCtx({
+      cfg: {
+        channels: { slack: { enabled: true } },
+      } as OpenClawConfig,
+    });
+    ctx.resolveUserName = async () => ({ name: "Alice" });
+    ctx.resolveChannelName = async () => ({ name: "general", type: "channel" });
+    ctx.isChannelAllowed = () => false;
+
+    const prepared = await prepareSlackMessage({
+      ctx,
+      account: defaultAccount,
+      message: createSlackMessage({
+        channel: "C123",
+        channel_type: "channel",
+        text: "<@B1> hi",
+        ts: "2.000",
+      }),
+      opts: { source: "app_mention", wasMentioned: true },
+    });
+
+    expect(prepared).toBeNull();
+    expect(sendMessageSlackMock).toHaveBeenCalledWith(
+      "C123",
+      "This channel is not allowed. An admin must add it to the allowlist.",
+      expect.objectContaining({
+        token: "token",
+        accountId: "default",
+        threadTs: "2.000",
+      }),
+    );
   });
 
   it("requires an explicit mention in threads when implicitThreadMention is false", async () => {

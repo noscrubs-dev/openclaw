@@ -171,8 +171,9 @@ async function authorizeSlackInboundMessage(params: {
   account: ResolvedSlackAccount;
   message: SlackMessageEvent;
   conversation: SlackConversationContext;
+  source: "message" | "app_mention";
 }): Promise<SlackAuthorizationContext | null> {
-  const { ctx, account, message, conversation } = params;
+  const { ctx, account, message, conversation, source } = params;
   const { isDirectMessage, channelName, resolvedChannelType, isBotMessage, allowBots } =
     conversation;
 
@@ -204,6 +205,21 @@ async function authorizeSlackInboundMessage(params: {
       channelType: resolvedChannelType,
     })
   ) {
+    if (
+      source === "app_mention" &&
+      (resolvedChannelType === "channel" || resolvedChannelType === "group")
+    ) {
+      await sendMessageSlack(
+        message.channel,
+        "This channel is not allowed. An admin must add it to the allowlist.",
+        {
+          token: ctx.botToken,
+          client: ctx.app.client,
+          accountId: account.accountId,
+          threadTs: message.thread_ts ?? message.ts,
+        },
+      );
+    }
     logVerbose("slack: drop message (channel not allowed)");
     return null;
   }
@@ -338,6 +354,7 @@ export async function prepareSlackMessage(params: {
     account,
     message,
     conversation,
+    source: opts.source,
   });
   if (!authorization) {
     return null;

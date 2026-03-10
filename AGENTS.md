@@ -201,6 +201,7 @@
 
 - This fork defaults to pnpm-first development. Do not assume Bun is the runtime unless a task explicitly requires it.
 - This fork does not rely on Telegram or WhatsApp integrations. Preserve shared code when touching generic channel logic, but do not treat those packages as part of the default validation path for fork-specific changes.
+- Fork/minimal-diff policy: unless the user explicitly asks for release/versioning work, do not edit `CHANGELOG.md`, app/plugin/package version numbers, or other release metadata in this fork. Keep diffs as small as possible to reduce merge conflicts when rebasing from `origin/main`.
 - Vocabulary: "makeup" = "mac app".
 - Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
 - When adding a new `AGENTS.md` anywhere in the repo, also add a `CLAUDE.md` symlink pointing to it (example: `ln -s AGENTS.md CLAUDE.md`).
