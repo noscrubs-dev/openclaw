@@ -88,15 +88,13 @@
 
 ## Build, Test, and Development Commands
 
-- Fork-specific runtime note: for the `noscrubs-dev/openclaw` fork, use Bun as the default local package manager/runtime, including for running the gateway, unless a task specifically requires Node/pnpm behavior.
 - Fork-specific channel note: this fork does not use the Telegram or WhatsApp stacks in production. Do not block local workflow/tooling choices on those packages unless a task explicitly targets them.
-- Runtime baseline: Node **22+** (keep Node + Bun paths working).
+- Runtime baseline: Node **22+**.
 - Install deps: `pnpm install`
 - If deps are missing (for example `node_modules` missing, `vitest not found`, or `command not found`), run the repo’s package-manager install command (prefer lockfile/README-defined PM), then rerun the exact requested command once. Apply this to test/build/lint/typecheck/dev commands; if retry still fails, report the command and first actionable error.
 - Pre-commit hooks: `prek install` (runs same checks as CI)
-- Also supported: `bun install` (keep `pnpm-lock.yaml` + Bun patching in sync when touching deps/patches).
-- Prefer Bun for TypeScript execution (scripts, dev, tests): `bun <file.ts>` / `bunx <tool>`.
-- Run CLI in dev: `pnpm openclaw ...` (bun) or `pnpm dev`.
+- Prefer `pnpm` scripts for TypeScript execution (scripts, dev, tests).
+- Run CLI in dev: `pnpm openclaw ...` or `pnpm dev`.
 - Node remains supported for running built output (`dist/*`) and production installs.
 - Mac packaging (dev): `scripts/package-mac-app.sh` defaults to current arch. Release checklist: `docs/platforms/mac/release.md`.
 - Type-check/build: `pnpm build`
@@ -201,7 +199,7 @@
 
 ## Agent-Specific Notes
 
-- This fork defaults to Bun-first development and Bun-run gateway sessions. If a command exists in both ecosystems, prefer Bun unless the task is explicitly about Node/pnpm packaging behavior.
+- This fork defaults to pnpm-first development. Do not assume Bun is the runtime unless a task explicitly requires it.
 - This fork does not rely on Telegram or WhatsApp integrations. Preserve shared code when touching generic channel logic, but do not treat those packages as part of the default validation path for fork-specific changes.
 - Vocabulary: "makeup" = "mac app".
 - Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
