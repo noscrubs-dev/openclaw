@@ -464,6 +464,7 @@ export async function resolveSlackThreadHistory(params: {
   client: SlackWebClient;
   currentMessageTs?: string;
   limit?: number;
+  sinceTimestampMs?: number;
 }): Promise<SlackThreadMessage[]> {
   const maxMessages = params.limit ?? 20;
   if (!Number.isFinite(maxMessages) || maxMessages <= 0) {
@@ -474,6 +475,10 @@ export async function resolveSlackThreadHistory(params: {
   const fetchLimit = 200;
   const retained: SlackRepliesPageMessage[] = [];
   let cursor: string | undefined;
+  const oldest =
+    typeof params.sinceTimestampMs === "number" && Number.isFinite(params.sinceTimestampMs)
+      ? (params.sinceTimestampMs / 1000).toFixed(3)
+      : undefined;
 
   try {
     do {
@@ -481,7 +486,8 @@ export async function resolveSlackThreadHistory(params: {
         channel: params.channelId,
         ts: params.threadTs,
         limit: fetchLimit,
-        inclusive: true,
+        inclusive: !oldest,
+        ...(oldest ? { oldest } : {}),
         ...(cursor ? { cursor } : {}),
       })) as SlackRepliesPage;
 
@@ -491,6 +497,9 @@ export async function resolveSlackThreadHistory(params: {
           continue;
         }
         if (params.currentMessageTs && msg.ts === params.currentMessageTs) {
+          continue;
+        }
+        if (oldest && msg.ts && Number(msg.ts) <= Number(oldest)) {
           continue;
         }
         retained.push(msg);

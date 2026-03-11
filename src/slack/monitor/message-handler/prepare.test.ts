@@ -525,7 +525,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     expect(replies).toHaveBeenCalledTimes(2);
   });
 
-  it("skips loading thread history when thread session already exists in store (bloat fix)", async () => {
+  it("backfills only newer thread history when thread session already exists in store", async () => {
     const { storePath } = makeTmpStorePath();
     const cfg = {
       session: { store: storePath },
@@ -542,33 +542,53 @@ describe("slack prepareSlackMessage inbound contract", () => {
       baseSessionKey: route.sessionKey,
       threadId: "200.000",
     });
+    const previousUpdatedAt = 2_000_000_000_000;
     fs.writeFileSync(
       storePath,
-      JSON.stringify({ [threadKeys.sessionKey]: { updatedAt: Date.now() } }, null, 2),
+      JSON.stringify({ [threadKeys.sessionKey]: { updatedAt: previousUpdatedAt } }, null, 2),
     );
 
-    const replies = vi.fn().mockResolvedValueOnce({
-      messages: [{ text: "starter", user: "U2", ts: "200.000" }],
-    });
+    const replies = vi
+      .fn()
+      .mockResolvedValueOnce({
+        messages: [{ text: "starter", user: "U2", ts: "200.000" }],
+      })
+      .mockResolvedValueOnce({
+        messages: [
+          { text: "starter", user: "U2", ts: "200.000" },
+          { text: "missed update", user: "U3", ts: "2000000000.100" },
+          { text: "current mention", user: "U1", ts: "201.000" },
+        ],
+        response_metadata: { next_cursor: "" },
+      });
     const slackCtx = createThreadSlackCtx({ cfg, replies });
-    slackCtx.resolveUserName = async () => ({ name: "Alice" });
+    slackCtx.resolveUserName = async (id: string) => ({
+      name: id === "U3" ? "Carol" : "Alice",
+    });
     slackCtx.resolveChannelName = async () => ({ name: "general", type: "channel" });
 
     const prepared = await prepareThreadMessage(slackCtx, {
-      text: "reply in old thread",
+      text: "current mention",
       ts: "201.000",
       thread_ts: "200.000",
     });
 
     expect(prepared).toBeTruthy();
     expect(prepared!.ctxPayload.IsFirstThreadTurn).toBeUndefined();
-    // Thread history should NOT be fetched for existing sessions (bloat fix)
-    expect(prepared!.ctxPayload.ThreadHistoryBody).toBeUndefined();
-    // Thread starter should also be skipped for existing sessions
+    expect(prepared!.ctxPayload.ThreadHistoryBody).toContain("missed update");
+    expect(prepared!.ctxPayload.ThreadHistoryBody).not.toContain("current mention");
     expect(prepared!.ctxPayload.ThreadStarterBody).toBeUndefined();
     expect(prepared!.ctxPayload.ThreadLabel).toContain("Slack thread");
-    // Replies API should only be called once (for thread starter lookup, not history)
-    expect(replies).toHaveBeenCalledTimes(1);
+    expect(replies).toHaveBeenCalledTimes(2);
+    expect(replies).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        channel: "C123",
+        ts: "200.000",
+        oldest: "2000000000.000",
+        inclusive: false,
+      }),
+    );
   });
 
   it("includes thread_ts and parent_user_id metadata in thread replies", async () => {
