@@ -51,7 +51,8 @@ describe("buildPairingReply", () => {
     it(`formats pairing reply for ${testCase.channel}`, () => {
       const text = buildPairingReply(testCase);
       expect(text).toContain(testCase.idLine);
-      expect(text).toContain(`Pairing code: ${testCase.code}`);
+      expect(text).toContain(`Code: ${testCase.code}`);
+      expect(text).toContain("Share these details with the bot owner:");
       // CLI commands should respect OPENCLAW_PROFILE when set (most tests run with isolated profile)
       const commandRe = new RegExp(
         `(?:openclaw|openclaw) --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,
@@ -59,4 +60,17 @@ describe("buildPairingReply", () => {
       expect(text).toMatch(commandRe);
     });
   }
+
+  it("adds Slack forwarding instructions without asking for a screenshot", () => {
+    const text = buildPairingReply({
+      channel: "slack",
+      idLine: "Your Slack user id: U1",
+      code: "DEF456",
+    });
+
+    expect(text).toContain("1. Forward this message to #product.");
+    expect(text).toContain("2. Do not send a screenshot.");
+    expect(text).toContain("choose Forward message");
+    expect(text).toContain("select #product");
+  });
 });
