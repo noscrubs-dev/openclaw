@@ -24,7 +24,7 @@ async function formatSlackThreadHistoryBody(params: {
   resolveUserName: SlackMonitorContext["resolveUserName"];
   channelId: string;
   envelopeOptions: ReturnType<
-    typeof import("../../../auto-reply/envelope.js").resolveEnvelopeFormatOptions
+    typeof import("openclaw/plugin-sdk/reply-runtime").resolveEnvelopeFormatOptions
   >;
 }): Promise<string | undefined> {
   if (params.threadHistory.length === 0) {
