@@ -28,6 +28,10 @@
 - This fork is published privately on GitHub Packages as `@noscrubs-dev/openclaw`. Treat that package identity as fork-specific release metadata and do not rewrite it toward upstream `openclaw` unless the user explicitly asks.
 - For this fork, releases are local-build and local-publish only. Do not rely on GitHub Actions for package publishing; build and publish to GitHub Packages manually from a local machine when explicitly requested.
 
+## Fork TODOs
+
+- Packaging workaround: the fork currently ships the installed-package UI rebuild path (`scripts/ui.js` plus the required `ui/**` build sources) because upstream still publishes the same packaged-install regression. When upstream ships an equivalent fix, remove this fork-specific workaround instead of carrying duplicate packaging divergence.
+
 ## Docs Linking (Mintlify)
 
 - Docs are hosted on Mintlify (docs.openclaw.ai).

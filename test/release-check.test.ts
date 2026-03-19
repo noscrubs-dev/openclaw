@@ -3,6 +3,7 @@ import {
   collectAppcastSparkleVersionErrors,
   collectBundledExtensionManifestErrors,
   collectForbiddenPackPaths,
+  collectMissingRequiredPackPaths,
   collectPackUnpackedSizeErrors,
 } from "../scripts/release-check.ts";
 
@@ -65,6 +66,47 @@ describe("collectForbiddenPackPaths", () => {
         "node_modules/.bin/openclaw",
       ]),
     ).toEqual(["extensions/tlon/node_modules/.bin/tlon", "node_modules/.bin/openclaw"]);
+  });
+});
+
+describe("collectMissingRequiredPackPaths", () => {
+  it("requires the installed-package UI rebuild files in npm pack output", () => {
+    expect(
+      collectMissingRequiredPackPaths([
+        "dist/index.js",
+        "dist/entry.js",
+        "dist/plugin-sdk/root-alias.cjs",
+        "dist/build-info.json",
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        "scripts/ui.js",
+        "ui/index.html",
+        "ui/package.json",
+        "ui/src/main.ts",
+        "ui/vite.config.ts",
+      ]),
+    );
+  });
+
+  it("accepts pack output that includes the UI rebuild files", () => {
+    const missing = collectMissingRequiredPackPaths([
+      "dist/index.js",
+      "dist/entry.js",
+      "dist/plugin-sdk/root-alias.cjs",
+      "dist/build-info.json",
+      "scripts/ui.js",
+      "ui/index.html",
+      "ui/package.json",
+      "ui/src/main.ts",
+      "ui/vite.config.ts",
+    ]);
+
+    expect(missing).not.toContain("scripts/ui.js");
+    expect(missing).not.toContain("ui/index.html");
+    expect(missing).not.toContain("ui/package.json");
+    expect(missing).not.toContain("ui/src/main.ts");
+    expect(missing).not.toContain("ui/vite.config.ts");
   });
 });
 
