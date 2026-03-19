@@ -12,6 +12,14 @@
   "openclaw": {
     "extensions": [
       "./index.ts"
-    ]
+    ],
+    "install": {
+      "npmSpec": "@openclaw/memory-lancedb",
+      "localPath": "extensions/memory-lancedb",
+      "defaultChoice": "npm"
+    },
+    "release": {
+      "publishToNpm": true
+    }
   }
 }
