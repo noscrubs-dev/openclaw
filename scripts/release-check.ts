@@ -216,6 +216,9 @@ function walkDistFiles(dirPath: string): string[] {
 
   const files: string[] = [];
   for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+    if (dirPath === distPath && entry.name === "extensions") {
+      continue;
+    }
     if (entry.name === "node_modules") {
       continue;
     }

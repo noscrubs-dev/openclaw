@@ -1,6 +1,6 @@
 {
   "name": "@openclaw/openrouter-provider",
-  "version": "2026.3.20",
+  "version": "2026.3.21",
   "private": true,
   "description": "OpenClaw OpenRouter provider plugin",
   "type": "module",

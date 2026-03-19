@@ -133,9 +133,6 @@ importers:
       '@slack/web-api':
         specifier: ^7.15.0
         version: 7.15.0
-      '@tloncorp/api':
-        specifier: git+https://github.com/tloncorp/api-beta.git#7eede1c1a756977b09f96aa14a92e2b06318ae87
-        version: https://codeload.github.com/tloncorp/api-beta/tar.gz/7eede1c1a756977b09f96aa14a92e2b06318ae87
       '@twurple/api':
         specifier: ^8.0.3
         version: 8.0.3(@twurple/auth@8.0.3)
@@ -145,9 +142,6 @@ importers:
       '@twurple/chat':
         specifier: ^8.0.3
         version: 8.0.3(@twurple/auth@8.0.3)
-      '@urbit/aura':
-        specifier: ^3.0.0
-        version: 3.0.0
       '@whiskeysockets/baileys':
         specifier: 7.0.0-rc.9
         version: 7.0.0-rc.9(audio-decode@2.2.3)(jimp@1.6.0)(sharp@0.34.5)
