@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   collectAppcastSparkleVersionErrors,
   collectBundledExtensionManifestErrors,
+  collectUndeclaredDistRuntimeDependencyErrors,
+  collectUndeclaredRuntimePackages,
   collectForbiddenPackPaths,
   collectMissingRequiredPackPaths,
   collectPackUnpackedSizeErrors,
@@ -107,6 +109,65 @@ describe("collectMissingRequiredPackPaths", () => {
     expect(missing).not.toContain("ui/package.json");
     expect(missing).not.toContain("ui/src/main.ts");
     expect(missing).not.toContain("ui/vite.config.ts");
+  });
+});
+
+describe("collectUndeclaredRuntimePackages", () => {
+  it("normalizes subpath imports to package names before checking the root manifest", () => {
+    expect(
+      collectUndeclaredRuntimePackages({
+        manifest: {
+          dependencies: {
+            "@slack/web-api": "^7.15.0",
+            "discord-api-types": "^0.38.42",
+          },
+          peerDependencies: {
+            "@napi-rs/canvas": "^0.1.89",
+          },
+        },
+        importSpecifiers: ["@slack/web-api", "discord-api-types/v10", "@napi-rs/canvas"],
+      }),
+    ).toEqual([]);
+  });
+
+  it("flags runtime imports missing from root, optional, and peer dependency declarations", () => {
+    expect(
+      collectUndeclaredRuntimePackages({
+        manifest: {
+          dependencies: {
+            "@slack/web-api": "^7.15.0",
+          },
+        },
+        importSpecifiers: ["@slack/web-api", "@slack/bolt", "grammy"],
+      }),
+    ).toEqual(["@slack/bolt", "grammy"]);
+  });
+});
+
+describe("collectUndeclaredDistRuntimeDependencyErrors", () => {
+  it("reports undeclared packages with the dist files that import them", () => {
+    expect(
+      collectUndeclaredDistRuntimeDependencyErrors({
+        manifest: {
+          dependencies: {
+            "@slack/web-api": "^7.15.0",
+          },
+        },
+        files: [
+          {
+            path: "dist/auth-profiles.js",
+            source: 'import { WebClient } from "@slack/web-api";\nimport { Bot } from "grammy";\n',
+          },
+          {
+            path: "dist/telegram.js",
+            source: 'export { run } from "@grammyjs/runner";\n',
+          },
+        ],
+      }),
+    ).toEqual([
+      "dist runtime imports undeclared package '@grammyjs/runner' (dist/telegram.js).",
+      "dist runtime imports undeclared package 'grammy' (dist/auth-profiles.js).",
+    ]);
   });
 });
 

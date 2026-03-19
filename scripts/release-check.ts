@@ -1,7 +1,8 @@
 #!/usr/bin/env -S node --import tsx
 
 import { execSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { builtinModules } from "node:module";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -16,6 +17,11 @@ export { collectBundledExtensionManifestErrors } from "./lib/bundled-extension-m
 
 type PackFile = { path: string };
 type PackResult = { files?: PackFile[]; filename?: string; unpackedSize?: number };
+type ReleasePackageManifest = {
+  dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
 
 const requiredPathGroups = [
   ["dist/index.js", "dist/index.mjs"],
@@ -35,8 +41,16 @@ const forbiddenPrefixes = ["dist-runtime/", "dist/OpenClaw.app/"];
 // failing fast if duplicate/shim content sneaks back into the release artifact.
 const npmPackUnpackedSizeBudgetBytes = 160 * 1024 * 1024;
 const appcastPath = resolve("appcast.xml");
+const packageJsonPath = resolve("package.json");
+const distPath = resolve("dist");
 const laneBuildMin = 1_000_000_000;
 const laneFloorAdoptionDateKey = 20260227;
+const runtimeImportRegexes = [
+  /^\s*import\s+(?:.+?\s+from\s+)?["']([^"']+)["']/gm,
+  /^\s*export\s+.+?\s+from\s+["']([^"']+)["']/gm,
+  /\bimport\(\s*["']([^"']+)["']\s*\)/g,
+];
+const builtinSpecifierSet = new Set(builtinModules.flatMap((name) => [name, `node:${name}`]));
 
 function collectBundledExtensions(): BundledExtension[] {
   const extensionsDir = resolve("extensions");
@@ -149,6 +163,99 @@ export function collectMissingRequiredPackPaths(paths: Iterable<string>): string
     .toSorted();
 }
 
+function collectRuntimeImportSpecifiersFromSource(source: string): string[] {
+  const specifiers = new Set<string>();
+
+  for (const regex of runtimeImportRegexes) {
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(source)) !== null) {
+      const specifier = match[1]?.trim();
+      if (!specifier || specifier.startsWith(".") || specifier.startsWith("/")) {
+        continue;
+      }
+      if (builtinSpecifierSet.has(specifier)) {
+        continue;
+      }
+      specifiers.add(specifier);
+    }
+  }
+
+  return [...specifiers].toSorted();
+}
+
+function normalizePackageName(specifier: string): string {
+  if (specifier.startsWith("@")) {
+    const [scope, name] = specifier.split("/");
+    return scope && name ? `${scope}/${name}` : specifier;
+  }
+  const [name] = specifier.split("/");
+  return name || specifier;
+}
+
+export function collectUndeclaredRuntimePackages(params: {
+  manifest: ReleasePackageManifest;
+  importSpecifiers: Iterable<string>;
+}): string[] {
+  const declared = new Set([
+    ...Object.keys(params.manifest.dependencies ?? {}),
+    ...Object.keys(params.manifest.optionalDependencies ?? {}),
+    ...Object.keys(params.manifest.peerDependencies ?? {}),
+  ]);
+
+  return [
+    ...new Set([...params.importSpecifiers].map((specifier) => normalizePackageName(specifier))),
+  ]
+    .filter((specifier) => !declared.has(specifier))
+    .toSorted();
+}
+
+function walkDistFiles(dirPath: string): string[] {
+  if (!existsSync(dirPath)) {
+    return [];
+  }
+
+  const files: string[] = [];
+  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+    if (entry.name === "node_modules") {
+      continue;
+    }
+    const entryPath = join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkDistFiles(entryPath));
+      continue;
+    }
+    if (/\.(?:c|m)?js$/u.test(entry.name)) {
+      files.push(entryPath);
+    }
+  }
+  return files;
+}
+
+export function collectUndeclaredDistRuntimeDependencyErrors(params: {
+  manifest: ReleasePackageManifest;
+  files: Iterable<{ path: string; source: string }>;
+}): string[] {
+  const importers = new Map<string, Set<string>>();
+
+  for (const file of params.files) {
+    for (const specifier of collectRuntimeImportSpecifiersFromSource(file.source)) {
+      const packageName = normalizePackageName(specifier);
+      if (!importers.has(packageName)) {
+        importers.set(packageName, new Set());
+      }
+      importers.get(packageName)?.add(file.path);
+    }
+  }
+
+  return collectUndeclaredRuntimePackages({
+    manifest: params.manifest,
+    importSpecifiers: importers.keys(),
+  }).map((packageName) => {
+    const sampleImporters = [...(importers.get(packageName) ?? [])].toSorted().slice(0, 3);
+    return `dist runtime imports undeclared package '${packageName}' (${sampleImporters.join(", ")}).`;
+  });
+}
+
 function extractTag(item: string, tag: string): string | null {
   const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`<${escapedTag}>([^<]+)</${escapedTag}>`);
@@ -219,6 +326,23 @@ function checkAppcastSparkleVersions() {
   const errors = collectAppcastSparkleVersionErrors(xml);
   if (errors.length > 0) {
     console.error("release-check: appcast sparkle version validation failed:");
+    for (const error of errors) {
+      console.error(`  - ${error}`);
+    }
+    process.exit(1);
+  }
+}
+
+function checkDistRuntimeDependencyDeclarations() {
+  const manifest = JSON.parse(readFileSync(packageJsonPath, "utf8")) as ReleasePackageManifest;
+  const files = walkDistFiles(distPath).map((path) => ({
+    path,
+    source: readFileSync(path, "utf8"),
+  }));
+  const errors = collectUndeclaredDistRuntimeDependencyErrors({ manifest, files });
+
+  if (errors.length > 0) {
+    console.error("release-check: dist runtime imports packages missing from the root manifest:");
     for (const error of errors) {
       console.error(`  - ${error}`);
     }
@@ -307,6 +431,7 @@ async function main() {
   checkAppcastSparkleVersions();
   await checkPluginSdkExports();
   checkBundledExtensionMetadata();
+  checkDistRuntimeDependencyDeclarations();
 
   const results = runPackDry();
   const files = results.flatMap((entry) => entry.files ?? []);
