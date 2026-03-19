@@ -455,6 +455,48 @@ describe("discoverOpenClawPlugins", () => {
     expectEscapesPackageDiagnostic(diagnostics);
   });
 
+  it("ignores bundled package metadata entries when the packaged runtime file is absent", () => {
+    const stateDir = makeTempDir();
+    const bundledDir = path.join(stateDir, "bundled");
+    const pluginDir = path.join(bundledDir, "matrix");
+    mkdirSafe(pluginDir);
+
+    writePluginPackageManifest({
+      packageDir: pluginDir,
+      packageName: "@openclaw/matrix",
+      extensions: ["./index.js"],
+    });
+    const packageJsonPath = path.join(pluginDir, "package.json");
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
+      openclaw?: { setupEntry?: string };
+    };
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify(
+        {
+          ...packageJson,
+          openclaw: {
+            ...packageJson.openclaw,
+            setupEntry: "./setup-entry.js",
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const result = discoverOpenClawPlugins({
+      env: {
+        ...buildDiscoveryEnv(stateDir),
+        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+      },
+    });
+
+    expect(result.candidates).toHaveLength(0);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
   it("ignores package manifests that are hardlinked aliases", async () => {
     if (process.platform === "win32") {
       return;

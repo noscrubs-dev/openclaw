@@ -454,6 +454,7 @@ function resolvePackageEntrySource(params: {
   packageDir: string;
   entryPath: string;
   sourceLabel: string;
+  origin: PluginOrigin;
   diagnostics: PluginDiagnostic[];
   rejectHardlinks?: boolean;
 }): string | null {
@@ -465,6 +466,11 @@ function resolvePackageEntrySource(params: {
     rejectHardlinks: params.rejectHardlinks ?? true,
   });
   if (!opened.ok) {
+    if (params.origin === "bundled" && opened.reason === "path") {
+      // Packaged installs ship metadata for some catalog-only bundled plugins
+      // without staging a runnable entrypoint under dist/extensions/.
+      return null;
+    }
     params.diagnostics.push({
       level: "error",
       message: `extension entry escapes package directory: ${params.entryPath}`,
@@ -537,6 +543,7 @@ function discoverInDirectory(params: {
             packageDir: fullPath,
             entryPath: setupEntryPath,
             sourceLabel: fullPath,
+            origin: params.origin,
             diagnostics: params.diagnostics,
             rejectHardlinks,
           })
@@ -548,6 +555,7 @@ function discoverInDirectory(params: {
           packageDir: fullPath,
           entryPath: extPath,
           sourceLabel: fullPath,
+          origin: params.origin,
           diagnostics: params.diagnostics,
           rejectHardlinks,
         });
@@ -667,6 +675,7 @@ function discoverFromPath(params: {
             packageDir: resolved,
             entryPath: setupEntryPath,
             sourceLabel: resolved,
+            origin: params.origin,
             diagnostics: params.diagnostics,
             rejectHardlinks,
           })
@@ -678,6 +687,7 @@ function discoverFromPath(params: {
           packageDir: resolved,
           entryPath: extPath,
           sourceLabel: resolved,
+          origin: params.origin,
           diagnostics: params.diagnostics,
           rejectHardlinks,
         });
