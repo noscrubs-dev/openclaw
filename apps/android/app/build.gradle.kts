@@ -73,6 +73,21 @@ android {
         }
     }
 
+    flavorDimensions += "store"
+
+    productFlavors {
+        create("play") {
+            dimension = "store"
+            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "false")
+            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "false")
+        }
+        create("thirdParty") {
+            dimension = "store"
+            buildConfigField("boolean", "OPENCLAW_ENABLE_SMS", "true")
+            buildConfigField("boolean", "OPENCLAW_ENABLE_CALL_LOG", "true")
+        }
+    }
+
     buildTypes {
         release {
             if (hasAndroidReleaseSigning) {
@@ -140,8 +155,13 @@ androidComponents {
             .forEach { output ->
                 val versionName = output.versionName.orNull ?: "0"
                 val buildType = variant.buildType
-
-                val outputFileName = "openclaw-$versionName-$buildType.apk"
+                val flavorName = variant.flavorName?.takeIf { it.isNotBlank() }
+                val outputFileName =
+                    if (flavorName == null) {
+                        "openclaw-$versionName-$buildType.apk"
+                    } else {
+                        "openclaw-$versionName-$flavorName-$buildType.apk"
+                    }
                 output.outputFileName = outputFileName
             }
     }

@@ -13,6 +13,9 @@
     "extensions": [
       "./index.ts"
     ],
+    "install": {
+      "minHostVersion": ">=2026.3.22"
+    },
     "channel": {
       "id": "twitch",
       "label": "Twitch",
