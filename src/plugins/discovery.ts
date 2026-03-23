@@ -479,22 +479,22 @@ function resolvePackageEntrySource(params: {
   if (!opened.ok) {
     return matchBoundaryFileOpenFailure(opened, {
       path: () => {
-        if (params.origin === "bundled") {
-          // Packaged installs ship metadata for some catalog-only bundled
-          // plugins without staging a runnable entrypoint under dist/extensions/.
-          return null;
-        }
-        params.diagnostics.push({
-          level: "error",
-          message: `extension entry escapes package directory: ${params.entryPath}`,
-          source: params.sourceLabel,
-        });
+        // Missing package entry files should not poison config validation.
+        // Discovery simply skips extensions whose declared runtime files are absent.
         return null;
       },
       io: () => {
         params.diagnostics.push({
           level: "warn",
           message: `extension entry unreadable (I/O error): ${params.entryPath}`,
+          source: params.sourceLabel,
+        });
+        return null;
+      },
+      fallback: () => {
+        params.diagnostics.push({
+          level: "error",
+          message: `extension entry escapes package directory: ${params.entryPath}`,
           source: params.sourceLabel,
         });
         return null;
