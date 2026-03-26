@@ -238,6 +238,49 @@ function walkDistFiles(dirPath: string): string[] {
   return files;
 }
 
+function resolveReachableRuntimeImport(fromPath: string, specifier: string): string | null {
+  if (!specifier.startsWith(".")) {
+    return null;
+  }
+
+  const resolved = resolve(join(fromPath, ".."), specifier);
+  if (existsSync(resolved)) {
+    return resolved;
+  }
+  for (const extension of [".js", ".mjs", ".cjs"]) {
+    if (existsSync(`${resolved}${extension}`)) {
+      return `${resolved}${extension}`;
+    }
+  }
+  return null;
+}
+
+export function collectReachableDistRuntimeFiles(rootEntryPaths: Iterable<string>): string[] {
+  const queue = [...new Set([...rootEntryPaths].map((entry) => resolve(entry)).filter(existsSync))];
+  const visited = new Set<string>();
+
+  while (queue.length > 0) {
+    const filePath = queue.shift();
+    if (!filePath || visited.has(filePath)) {
+      continue;
+    }
+    visited.add(filePath);
+
+    const source = readFileSync(filePath, "utf8");
+    for (const regex of runtimeImportRegexes) {
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(source)) !== null) {
+        const nextPath = resolveReachableRuntimeImport(filePath, match[1]?.trim() ?? "");
+        if (nextPath && !visited.has(nextPath)) {
+          queue.push(nextPath);
+        }
+      }
+    }
+  }
+
+  return [...visited].toSorted();
+}
+
 export function collectUndeclaredDistRuntimeDependencyErrors(params: {
   manifest: ReleasePackageManifest;
   files: Iterable<{ path: string; source: string }>;
@@ -342,7 +385,12 @@ function checkAppcastSparkleVersions() {
 
 function checkDistRuntimeDependencyDeclarations() {
   const manifest = JSON.parse(readFileSync(packageJsonPath, "utf8")) as ReleasePackageManifest;
-  const files = walkDistFiles(distPath).map((path) => ({
+  const files = collectReachableDistRuntimeFiles([
+    join(distPath, "index.js"),
+    join(distPath, "index.mjs"),
+    join(distPath, "entry.js"),
+    join(distPath, "entry.mjs"),
+  ]).map((path) => ({
     path,
     source: readFileSync(path, "utf8"),
   }));

@@ -1,3 +1,6 @@
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 import { listBundledPluginPackArtifacts } from "../scripts/lib/bundled-plugin-build-entries.mjs";
 import { listPluginSdkDistArtifacts } from "../scripts/lib/plugin-sdk-entries.mjs";
@@ -7,6 +10,7 @@ import {
   collectForbiddenPackPaths,
   collectMissingPackPaths,
   collectPackUnpackedSizeErrors,
+  collectReachableDistRuntimeFiles,
   collectUndeclaredDistRuntimeDependencyErrors,
   collectUndeclaredRuntimePackages,
 } from "../scripts/release-check.ts";
@@ -245,6 +249,24 @@ describe("collectUndeclaredDistRuntimeDependencyErrors", () => {
     ).toEqual([
       "dist runtime imports undeclared package '@grammyjs/runner' (dist/telegram.js).",
       "dist runtime imports undeclared package 'grammy' (dist/auth-profiles.js).",
+    ]);
+  });
+});
+
+describe("collectReachableDistRuntimeFiles", () => {
+  it("limits runtime dependency checks to files reachable from the entry graph", () => {
+    const root = mkdtempSync(join(tmpdir(), "openclaw-release-check-"));
+    const distDir = join(root, "dist");
+    mkdirSync(distDir, { recursive: true });
+    writeFileSync(join(distDir, "index.js"), 'import "./shared.js";\n');
+    writeFileSync(join(distDir, "shared.js"), 'await import("./lazy.js");\n');
+    writeFileSync(join(distDir, "lazy.js"), 'import "declared-package";\n');
+    writeFileSync(join(distDir, "orphan.js"), 'import "plugin-only-package";\n');
+
+    expect(collectReachableDistRuntimeFiles([join(distDir, "index.js")])).toEqual([
+      join(distDir, "index.js"),
+      join(distDir, "lazy.js"),
+      join(distDir, "shared.js"),
     ]);
   });
 });
