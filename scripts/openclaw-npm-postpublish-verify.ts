@@ -5,16 +5,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { BUNDLED_RUNTIME_SIDECAR_PATHS } from "../src/plugins/public-artifacts.ts";
 import { parseReleaseVersion, resolveNpmCommandInvocation } from "./openclaw-npm-release-check.ts";
-
-const REQUIRED_RUNTIME_SIDECARS = [
-  "dist/extensions/whatsapp/light-runtime-api.js",
-  "dist/extensions/whatsapp/runtime-api.js",
-  "dist/extensions/matrix/helper-api.js",
-  "dist/extensions/matrix/runtime-api.js",
-  "dist/extensions/matrix/thread-bindings-runtime.js",
-  "dist/extensions/msteams/runtime-api.js",
-] as const;
 
 type InstalledPackageJson = {
   version?: string;
@@ -26,13 +18,15 @@ export type PublishedInstallScenario = {
   expectedVersion: string;
 };
 
+const EXPECTED_PACKAGE_NAME = "@noscrubs-dev/openclaw";
+
 export function buildPublishedInstallScenarios(version: string): PublishedInstallScenario[] {
   const parsed = parseReleaseVersion(version);
   if (parsed === null) {
     throw new Error(`Unsupported release version "${version}".`);
   }
 
-  const exactSpec = `openclaw@${version}`;
+  const exactSpec = `${EXPECTED_PACKAGE_NAME}@${version}`;
   const scenarios: PublishedInstallScenario[] = [
     {
       name: "fresh-exact",
@@ -44,7 +38,7 @@ export function buildPublishedInstallScenarios(version: string): PublishedInstal
   if (parsed.channel === "stable" && parsed.correctionNumber !== undefined) {
     scenarios.push({
       name: "upgrade-from-base-stable",
-      installSpecs: [`openclaw@${parsed.baseVersion}`, exactSpec],
+      installSpecs: [`${EXPECTED_PACKAGE_NAME}@${parsed.baseVersion}`, exactSpec],
       expectedVersion: version,
     });
   }
@@ -65,7 +59,7 @@ export function collectInstalledPackageErrors(params: {
     );
   }
 
-  for (const relativePath of REQUIRED_RUNTIME_SIDECARS) {
+  for (const relativePath of BUNDLED_RUNTIME_SIDECAR_PATHS) {
     if (!existsSync(join(params.packageRoot, relativePath))) {
       errors.push(`installed package is missing required bundled runtime sidecar: ${relativePath}`);
     }
@@ -106,7 +100,7 @@ function verifyScenario(version: string, scenario: PublishedInstallScenario): vo
     }
 
     const globalRoot = resolveGlobalRoot(prefixDir, workingDir);
-    const packageRoot = join(globalRoot, "openclaw");
+    const packageRoot = join(globalRoot, "@noscrubs-dev", "openclaw");
     const pkg = JSON.parse(
       readFileSync(join(packageRoot, "package.json"), "utf8"),
     ) as InstalledPackageJson;

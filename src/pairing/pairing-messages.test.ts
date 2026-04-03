@@ -14,7 +14,7 @@ describe("buildPairingReply", () => {
     envSnapshot.restore();
   });
 
-  const cases = [
+  const pairingReplyCases = [
     {
       channel: "telegram",
       idLine: "Your Telegram user id: 42",
@@ -47,19 +47,28 @@ describe("buildPairingReply", () => {
     },
   ] as const;
 
-  for (const testCase of cases) {
-    it(`formats pairing reply for ${testCase.channel}`, () => {
-      const text = buildPairingReply(testCase);
-      expect(text).toContain(testCase.idLine);
-      expect(text).toContain(`Code: ${testCase.code}`);
-      expect(text).toContain("Share these details with the bot owner:");
-      // CLI commands should respect OPENCLAW_PROFILE when set (most tests run with isolated profile)
-      const commandRe = new RegExp(
-        `(?:openclaw|openclaw) --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,
-      );
-      expect(text).toMatch(commandRe);
-    });
+  function expectPairingReplyText(text: string, testCase: (typeof pairingReplyCases)[number]) {
+    expect(text).toContain(testCase.idLine);
+    expect(text).toContain(`Code: ${testCase.code}`);
+    expect(text).toContain("Share these details with the bot owner:");
   }
+
+  function expectPairingApproveCommand(text: string, testCase: (typeof pairingReplyCases)[number]) {
+    const commandRe = new RegExp(
+      `(?:openclaw|openclaw) --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,
+    );
+    expect(text).toMatch(commandRe);
+  }
+
+  function expectProfileAwarePairingReply(testCase: (typeof pairingReplyCases)[number]) {
+    const text = buildPairingReply(testCase);
+    expectPairingReplyText(text, testCase);
+    expectPairingApproveCommand(text, testCase);
+  }
+
+  it.each(pairingReplyCases)("formats pairing reply for $channel", (testCase) => {
+    expectProfileAwarePairingReply(testCase);
+  });
 
   it("adds Slack forwarding instructions without asking for a screenshot", () => {
     const text = buildPairingReply({
