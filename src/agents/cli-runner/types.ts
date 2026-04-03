@@ -47,6 +47,7 @@ export type PreparedCliRunContext = {
   params: RunCliAgentParams;
   started: number;
   workspaceDir: string;
+  sessionAgentId: string;
   backendResolved: ResolvedCliBackend;
   preparedBackend: CliPreparedBackend;
   reusableCliSession: CliReusableSession;

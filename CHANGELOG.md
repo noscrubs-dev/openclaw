@@ -4,6 +4,8 @@ Docs: https://docs.openclaw.ai
 
 ## Unreleased
 
+## 2026.4.4
+
 ### Changes
 
 - Android/assistant: auto-send Google Assistant App Actions prompts once chat is healthy and idle, while keeping bare assistant launches as open-only. (#59721) Thanks @obviyus.
@@ -103,6 +105,7 @@ Docs: https://docs.openclaw.ai
 - Node-host/exec approvals: bind `pnpm dlx` invocations through the approval planner's mutable-script path so the effective runtime command is resolved for approval instead of being left unbound. (#58374)
 - Exec/node hosts: stop forwarding the gateway workspace cwd to remote node exec when no workdir was explicitly requested, so cross-platform node approvals fall back to the node default cwd instead of failing with `SYSTEM_RUN_DENIED`. (#58977) Thanks @Starhappysh.
 - Exec approvals/channels: decouple initiating-surface approval availability from native delivery enablement so Telegram, Slack, and Discord still expose approvals when approvers exist and native target routing is configured separately. (#59776) Thanks @joelnishanth.
+- Agents/CLI backends: restore runtime env injection for wrapper-based CLI backend launches so child processes once again receive `OPENCLAW_SESSION_KEY`, `OPENCLAW_AGENT_ID`, `OPENCLAW_WORKSPACE_DIR`, `OPENCLAW_SESSION_ID`, `OPENCLAW_RUN_ID`, `OPENCLAW_PROVIDER`, and `OPENCLAW_MODEL`.
 
 ## 2026.4.2
 

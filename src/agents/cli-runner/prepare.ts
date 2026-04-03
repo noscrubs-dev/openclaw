@@ -168,6 +168,7 @@ export async function prepareCliRunContext(
     params,
     started,
     workspaceDir,
+    sessionAgentId,
     backendResolved,
     preparedBackend,
     reusableCliSession,

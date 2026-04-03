@@ -38,6 +38,29 @@ export function setCliRunnerExecuteTestDeps(overrides: Partial<typeof executeDep
   Object.assign(executeDeps, overrides);
 }
 
+function buildCliRuntimeEnv(params: {
+  sessionId: string;
+  sessionKey?: string;
+  workspaceDir: string;
+  agentId: string;
+  provider: string;
+  model: string;
+  runId: string;
+}): Record<string, string> {
+  const env: Record<string, string> = {
+    OPENCLAW_SESSION_ID: params.sessionId,
+    OPENCLAW_WORKSPACE_DIR: params.workspaceDir,
+    OPENCLAW_AGENT_ID: params.agentId,
+    OPENCLAW_PROVIDER: params.provider,
+    OPENCLAW_MODEL: params.model,
+    OPENCLAW_RUN_ID: params.runId,
+  };
+  if (params.sessionKey?.trim()) {
+    env.OPENCLAW_SESSION_KEY = params.sessionKey.trim();
+  }
+  return env;
+}
+
 function buildCliLogArgs(params: {
   args: string[];
   systemPromptArg?: string;
@@ -163,6 +186,15 @@ export async function executePreparedCliRun(
         cliBackendLog.info(`cli argv: ${backend.command} ${logArgs.join(" ")}`);
       }
 
+      const runtimeEnv = buildCliRuntimeEnv({
+        sessionId: params.sessionId,
+        sessionKey: params.sessionKey,
+        workspaceDir: context.workspaceDir,
+        agentId: context.sessionAgentId,
+        provider: params.provider,
+        model: context.modelId,
+        runId: params.runId,
+      });
       const env = (() => {
         const next = sanitizeHostExecEnv({
           baseEnv: process.env,
@@ -172,7 +204,7 @@ export async function executePreparedCliRun(
         for (const key of backend.clearEnv ?? []) {
           delete next[key];
         }
-        return next;
+        return { ...next, ...runtimeEnv };
       })();
       const noOutputTimeoutMs = resolveCliNoOutputTimeoutMs({
         backend,

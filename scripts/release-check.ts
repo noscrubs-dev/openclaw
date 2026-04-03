@@ -295,31 +295,6 @@ export function collectUndeclaredRuntimePackages(params: {
     .toSorted();
 }
 
-function walkDistFiles(dirPath: string): string[] {
-  if (!existsSync(dirPath)) {
-    return [];
-  }
-
-  const files: string[] = [];
-  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-    if (dirPath === distPath && entry.name === "extensions") {
-      continue;
-    }
-    if (entry.name === "node_modules") {
-      continue;
-    }
-    const entryPath = join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...walkDistFiles(entryPath));
-      continue;
-    }
-    if (/\.(?:c|m)?js$/u.test(entry.name)) {
-      files.push(entryPath);
-    }
-  }
-  return files;
-}
-
 function resolveReachableRuntimeImport(fromPath: string, specifier: string): string | null {
   if (!specifier.startsWith(".")) {
     return null;
