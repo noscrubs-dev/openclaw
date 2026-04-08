@@ -1,6 +1,6 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { listBundledPluginPackArtifacts } from "../scripts/lib/bundled-plugin-build-entries.mjs";
 import { listPluginSdkDistArtifacts } from "../scripts/lib/plugin-sdk-entries.mjs";
@@ -260,6 +260,12 @@ describe("collectForbiddenPackPaths", () => {
     ).toEqual([
       "docs/.generated/config-baseline.core.json",
       "docs/.generated/config-baseline.json",
+    ]);
+  });
+
+  it("blocks plugin SDK TypeScript build info from npm pack output", () => {
+    expect(collectForbiddenPackPaths(["dist/index.js", "dist/plugin-sdk/.tsbuildinfo"])).toEqual([
+      "dist/plugin-sdk/.tsbuildinfo",
     ]);
   });
 });
