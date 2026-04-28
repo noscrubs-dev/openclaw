@@ -973,7 +973,7 @@ describe("scanBundledPluginRuntimeDeps config policy", () => {
       JSON.stringify({
         name: "openclaw",
         version: "2026.4.25",
-        dependencies: { tslog: "^4.10.2" },
+        dependencies: { chokidar: "^5.0.0", tslog: "^4.10.2" },
       }),
     );
     writeBundledPluginPackage({
@@ -990,10 +990,12 @@ describe("scanBundledPluginRuntimeDeps config policy", () => {
     });
 
     expect(result.deps.map((dep) => `${dep.name}@${dep.version}`)).toEqual([
+      "chokidar@^5.0.0",
       "discord-runtime@1.0.0",
       "tslog@^4.10.2",
     ]);
     expect(result.missing.map((dep) => `${dep.name}@${dep.version}`)).toEqual([
+      "chokidar@^5.0.0",
       "discord-runtime@1.0.0",
       "tslog@^4.10.2",
     ]);
@@ -1007,7 +1009,7 @@ describe("scanBundledPluginRuntimeDeps config policy", () => {
       JSON.stringify({
         name: "openclaw",
         version: "2026.4.25",
-        dependencies: { tslog: "^4.10.2" },
+        dependencies: { chokidar: "^5.0.0", tslog: "^4.10.2" },
       }),
     );
     writeBundledPluginPackage({
@@ -1026,9 +1028,15 @@ describe("scanBundledPluginRuntimeDeps config policy", () => {
       env: { OPENCLAW_PLUGIN_STAGE_DIR: stageDir },
     });
 
-    expect(result.deps.map((dep) => `${dep.name}@${dep.version}`)).toEqual(["tslog@^4.10.2"]);
-    expect(result.deps[0]?.pluginIds).toEqual(["openclaw-core"]);
-    expect(result.missing.map((dep) => `${dep.name}@${dep.version}`)).toEqual(["tslog@^4.10.2"]);
+    expect(result.deps.map((dep) => `${dep.name}@${dep.version}`)).toEqual([
+      "chokidar@^5.0.0",
+      "tslog@^4.10.2",
+    ]);
+    expect(result.deps.map((dep) => dep.pluginIds)).toEqual([["openclaw-core"], ["openclaw-core"]]);
+    expect(result.missing.map((dep) => `${dep.name}@${dep.version}`)).toEqual([
+      "chokidar@^5.0.0",
+      "tslog@^4.10.2",
+    ]);
   });
 
   it("deduplicates mirrored core runtime deps already declared by a plugin", () => {
@@ -1039,7 +1047,7 @@ describe("scanBundledPluginRuntimeDeps config policy", () => {
       JSON.stringify({
         name: "openclaw",
         version: "2026.4.25",
-        dependencies: { tslog: "^4.10.2" },
+        dependencies: { chokidar: "^5.0.0", tslog: "^4.10.2" },
       }),
     );
     writeBundledPluginPackage({
@@ -1055,9 +1063,18 @@ describe("scanBundledPluginRuntimeDeps config policy", () => {
       env: { OPENCLAW_PLUGIN_STAGE_DIR: stageDir },
     });
 
-    expect(result.deps.map((dep) => `${dep.name}@${dep.version}`)).toEqual(["tslog@^4.10.2"]);
-    expect(result.deps[0]?.pluginIds).toEqual(["logger-plugin", "openclaw-core"]);
-    expect(result.missing.map((dep) => `${dep.name}@${dep.version}`)).toEqual(["tslog@^4.10.2"]);
+    expect(result.deps.map((dep) => `${dep.name}@${dep.version}`)).toEqual([
+      "chokidar@^5.0.0",
+      "tslog@^4.10.2",
+    ]);
+    expect(result.deps.map((dep) => dep.pluginIds)).toEqual([
+      ["openclaw-core"],
+      ["logger-plugin", "openclaw-core"],
+    ]);
+    expect(result.missing.map((dep) => `${dep.name}@${dep.version}`)).toEqual([
+      "chokidar@^5.0.0",
+      "tslog@^4.10.2",
+    ]);
   });
 
   it("resolves runtime deps from layered external stage dirs", () => {

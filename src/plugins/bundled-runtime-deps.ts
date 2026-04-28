@@ -69,7 +69,7 @@ const BUNDLED_RUNTIME_DEPS_OWNERLESS_LOCK_STALE_MS = 30_000;
 const BUNDLED_RUNTIME_DEPS_INSTALL_PROGRESS_INTERVAL_MS = 5_000;
 const BUNDLED_RUNTIME_MIRROR_MATERIALIZED_EXTENSIONS = new Set([".cjs", ".js", ".mjs"]);
 const BUNDLED_RUNTIME_MIRROR_PLUGIN_REGION_RE = /(?:^|\n)\/\/#region extensions\/[^/\s]+(?:\/|$)/u;
-const MIRRORED_PACKAGE_RUNTIME_DEP_NAMES = ["tslog"] as const;
+const MIRRORED_PACKAGE_RUNTIME_DEP_NAMES = ["chokidar", "tslog"] as const;
 const MIRRORED_PACKAGE_RUNTIME_DEP_PLUGIN_ID = "openclaw-core";
 
 const registeredBundledRuntimeDepNodePaths = new Set<string>();
