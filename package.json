@@ -64,6 +64,7 @@
     "ui/package.json",
     "ui/public/",
     "ui/src/",
+    "!ui/src/**/*.test.ts",
     "ui/vite.config.ts"
   ],
   "type": "module",
