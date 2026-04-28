@@ -523,7 +523,7 @@ function readInstalledBinaryVersion(prefixDir: string, cwd: string): string {
   }).trim();
 }
 
-function verifyScenario(version: string, scenario: PublishedInstallScenario): void {
+async function verifyScenario(version: string, scenario: PublishedInstallScenario): Promise<void> {
   const workingDir = mkdtempSync(join(tmpdir(), `openclaw-postpublish-${scenario.name}.`));
   const prefixDir = join(workingDir, "prefix");
 
@@ -564,7 +564,7 @@ function verifyScenario(version: string, scenario: PublishedInstallScenario): vo
   }
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const version = process.argv[2]?.trim();
   if (!version) {
     throw new Error(
@@ -574,7 +574,7 @@ function main(): void {
 
   const scenarios = buildPublishedInstallScenarios(version);
   for (const scenario of scenarios) {
-    verifyScenario(version, scenario);
+    await verifyScenario(version, scenario);
   }
 
   console.log(
@@ -585,7 +585,7 @@ function main(): void {
 const entrypoint = process.argv[1] ? pathToFileURL(process.argv[1]).href : null;
 if (entrypoint !== null && import.meta.url === entrypoint) {
   try {
-    main();
+    await main();
   } catch (error) {
     console.error(`openclaw-npm-postpublish-verify: ${formatErrorMessage(error)}`);
     process.exitCode = 1;
